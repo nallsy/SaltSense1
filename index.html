@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10233f">
+  <meta name="description" content="SaltSense — браузерный прототип для постепенного тестирования добавляемой соли и оценки вкуса в рецептах организаций общественного питания.">
+  <title>SaltSense — контроль добавляемой соли в блюдах</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --navy: #10233f;
+      --navy-2: #183453;
+      --teal: #14b7ae;
+      --teal-dark: #087d79;
+      --pale: #e9f8f6;
+      --bg: #f4f7fa;
+      --text: #253446;
+      --muted: #64758a;
+      --line: #dce5ed;
+      --white: #fff;
+      --orange: #f3a346;
+      --danger: #a63b3b;
+      --focus: #087d79;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    button, input, select, textarea { font: inherit; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 3px solid #14b7ae66;
+      outline-offset: 2px;
+    }
+    header {
+      background: var(--navy);
+      color: var(--white);
+      padding: 20px max(20px, calc((100% - 1120px) / 2));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .brand { font-size: 26px; font-weight: 800; letter-spacing: -.6px; }
+    .brand span { color: var(--teal); }
+    .tag { font-size: 12px; color: #c8d8e6; margin-top: 4px; }
+    .status-badge { border: 1px solid #49627d; border-radius: 999px; padding: 7px 12px; font-size: 12px; color: #dbe7f0; }
+    main { max-width: 1120px; margin: 28px auto; padding: 0 18px 40px; }
+    .intro { margin-bottom: 22px; }
+    .eyebrow { color: var(--teal-dark); font-weight: 800; font-size: 11px; letter-spacing: 1.3px; text-transform: uppercase; }
+    .intro h1 { color: var(--navy); font-size: clamp(27px, 4vw, 38px); line-height: 1.1; margin: 8px 0; }
+    .intro p { color: var(--muted); max-width: 720px; line-height: 1.6; margin: 0; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr); gap: 18px; align-items: start; }
+    .panel { background: var(--white); border: 1px solid var(--line); border-radius: 18px; padding: 22px; box-shadow: 0 5px 18px #10233f08; }
+    .panel h2 { margin: 0 0 18px; font-size: 19px; color: var(--navy); }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 7px; color: #46586b; }
+    .field input, .field select, .field textarea {
+      width: 100%; border: 1px solid #ccd8e2; border-radius: 10px; padding: 12px 13px;
+      color: var(--text); background: var(--white); outline: none;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px #14b7ae20; }
+    .field textarea { resize: vertical; min-height: 68px; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .hint { font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 6px; }
+    .rangehead { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 700; margin-bottom: 9px; }
+    .rangehead label { margin: 0; }
+    .rangehead strong { color: var(--teal-dark); font-size: 15px; }
+    input[type="range"] { width: 100%; accent-color: var(--teal-dark); }
+    .actions { display: flex; gap: 9px; flex-wrap: wrap; }
+    button { border: 0; border-radius: 11px; background: var(--teal); color: var(--navy); font-weight: 800; font-size: 14px; padding: 12px 16px; cursor: pointer; transition: transform .15s, filter .15s; }
+    button:hover:not(:disabled) { filter: brightness(.97); transform: translateY(-1px); }
+    button:disabled { cursor: not-allowed; opacity: .5; }
+    button.secondary { background: var(--white); color: var(--navy); border: 1px solid var(--line); }
+    button.dark { background: var(--navy); color: var(--white); }
+    button.danger { background: #fff1f1; color: var(--danger); border: 1px solid #f3d1d1; }
+    .resulttop { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .resulttop h2 { margin-bottom: 0; }
+    .pill { background: var(--pale); color: var(--teal-dark); padding: 6px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0; }
+    .kpi { background: var(--bg); border-radius: 13px; padding: 15px; min-width: 0; }
+    .kpi .label { font-size: 11px; color: var(--muted); font-weight: 700; line-height: 1.4; }
+    .kpi .value { font-size: 27px; font-weight: 850; color: var(--navy); margin-top: 5px; letter-spacing: -.5px; overflow-wrap: anywhere; }
+    .kpi .unit { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 0; }
+    .barwrap { margin: 18px 0 8px; }
+    .barlabel { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; margin-bottom: 7px; }
+    .barlabel strong { white-space: nowrap; }
+    .bar { height: 10px; border-radius: 99px; background: #e8edf2; overflow: hidden; }
+    .bar > div { height: 100%; border-radius: 99px; background: var(--teal-dark); width: 0%; transition: width .2s; }
+    .bar-legend { display: flex; justify-content: space-between; margin-top: 5px; color: var(--muted); font-size: 10px; }
+    .compare { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 12px; }
+    .compare th { text-align: left; color: var(--muted); font-size: 11px; font-weight: 700; border-bottom: 1px solid var(--line); padding: 9px 6px; }
+    .compare td { padding: 11px 6px; border-bottom: 1px solid #edf1f5; }
+    .compare tr:last-child td { border-bottom: 0; }
+    .compare td:last-child, .compare th:last-child { text-align: right; }
+    .saved { margin-top: 18px; }
+    .savedhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .savedhead h2 { margin: 0; }
+    .savedhead .actions { align-items: center; }
+    .record-count { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .recipe-list { display: grid; gap: 9px; margin-top: 13px; }
+    .recipe { border: 1px solid var(--line); border-radius: 12px; padding: 13px; display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .recipe-info { min-width: 0; }
+    .recipe strong { display: block; color: var(--navy); font-size: 13px; overflow-wrap: anywhere; }
+    .recipe small { display: block; color: var(--muted); margin-top: 4px; font-size: 11px; line-height: 1.5; }
+    .recipe-actions { display: flex; flex-wrap: wrap; gap: 7px; justify-content: flex-end; flex-shrink: 0; }
+    .recipe button { padding: 8px 10px; font-size: 11px; }
+    .empty { font-size: 13px; color: var(--muted); padding: 16px 0; }
+    .outlook { margin-top: 18px; }
+    .outlook-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+    .outlook-head h2 { margin: 5px 0 0; }
+    .outlook-intro { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 14px 0; max-width: 850px; }
+    .future-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+    .future-card { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+    .future-card .future-number { color: var(--teal-dark); font-size: 11px; font-weight: 800; }
+    .future-card h3 { color: var(--navy); font-size: 13px; margin: 7px 0 5px; }
+    .future-card p { color: var(--muted); font-size: 11px; line-height: 1.5; margin: 0; }
+    .outlook .hint { margin-bottom: 0; }
+    .note { margin-top: 18px; background: #fff8ed; border: 1px solid #f6e0c0; border-radius: 13px; padding: 14px 15px; font-size: 12px; line-height: 1.55; }
+    .note strong { color: #8b5c19; }
+    .foot { font-size: 11px; color: var(--muted); text-align: center; margin-top: 24px; line-height: 1.6; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    @media (max-width: 780px) {
+      .layout { grid-template-columns: 1fr; }
+      header { padding: 18px 20px; }
+      main { margin-top: 20px; }
+      .panel { padding: 18px; }
+    }
+    @media (max-width: 480px) {
+      .two { grid-template-columns: 1fr; gap: 0; }
+      .kpi .value { font-size: 24px; }
+      .intro h1 { font-size: 29px; }
+      .recipe { align-items: flex-start; flex-direction: column; }
+      .recipe-actions { justify-content: flex-start; }
+      .resulttop { align-items: flex-start; flex-direction: column; }
+      .barlabel { flex-wrap: wrap; }
+      .future-grid { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="brand">Salt<span>Sense</span></div>
+      <div class="tag">Для школьных столовых, кафе и общественного питания</div>
+    </div>
+    <div class="status-badge">ДЕМО · ПРОТОТИП 0.3</div>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div class="eyebrow">Цифровой прототип</div>
+      <h1 id="page-title">Меньше добавляемой соли.<br>Вкус — под контролем.</h1>
+      <p>SaltSense помогает школьным столовым, кафе, ресторанам и пищевым производствам постепенно проверять снижение добавляемой соли в конкретных блюдах: рассчитать пробный вариант, оценить вкус и сохранить результат. Такой подход помогает систематизировать кулинарные эксперименты, но не гарантирует сохранение вкуса и не заменяет профессиональную или лабораторную оценку. Данные демоверсии хранятся только в этом браузере.</p>
+    </section>
+
+    <div class="layout">
+      <section class="panel" aria-labelledby="recipe-heading">
+        <h2 id="recipe-heading">01 / Параметры рецепта</h2>
+        <form id="recipeForm" novalidate>
+          <div class="field">
+            <label for="dish">Название блюда</label>
+            <input id="dish" name="dish" maxlength="90" value="Куриный суп" placeholder="Например, овощное рагу" autocomplete="off">
+          </div>
+          <div class="two">
+            <div class="field">
+              <label for="portions">Количество порций</label>
+              <input id="portions" name="portions" type="number" min="1" step="1" value="100" inputmode="numeric" required aria-describedby="portionsHint">
+              <div class="hint" id="portionsHint">Введите целое число больше нуля.</div>
+            </div>
+            <div class="field">
+              <label for="salt">Соль на всю партию (г)</label>
+              <input id="salt" name="salt" type="number" min="0" step="any" value="100" inputmode="decimal" required aria-describedby="saltHint">
+              <div class="hint" id="saltHint">Только соль, указанная в рецептуре.</div>
+            </div>
+          </div>
+          <div class="field">
+            <div class="rangehead"><label for="reduction">Пробное снижение соли</label><strong id="reductionLabel">15%</strong></div>
+            <input id="reduction" name="reduction" type="range" min="0" max="30" step="5" value="15" aria-describedby="reductionHint">
+            <div class="hint" id="reductionHint">Шаг 5%. Это параметр эксперимента, а не медицинская рекомендация.</div>
+          </div>
+          <div class="field">
+            <label for="taste">Оценка вкуса пробного варианта (1–5)</label>
+            <select id="taste" name="taste">
+              <option value="">Пока не оценивали</option>
+              <option value="1">1 — совсем не понравилось</option>
+              <option value="2">2 — скорее не понравилось</option>
+              <option value="3">3 — приемлемо</option>
+              <option value="4">4 — понравилось</option>
+              <option value="5">5 — очень понравилось</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="comments">Заметки дегустации</label>
+            <textarea id="comments" name="comments" rows="2" maxlength="500" placeholder="Например: вкус приемлемый, можно повторить тест"></textarea>
+          </div>
+          <div class="actions">
+            <button id="save" type="submit">Сохранить рецепт</button>
+            <button class="secondary" id="reset" type="reset">Сбросить поля</button>
+          </div>
+          <p id="formStatus" class="hint" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="result-heading">
+        <div class="resulttop">
+          <h2 id="result-heading">02 / Результат расчёта</h2>
+          <span class="pill">Обновляется автоматически</span>
+        </div>
+        <div class="kpis" aria-describedby="calcStatus">
+          <div class="kpi"><div class="label">Исходная соль на партию</div><div class="value"><span id="original">100</span> <span class="unit">г</span></div></div>
+          <div class="kpi"><div class="label">Соль после снижения</div><div class="value"><span id="newSalt">85</span> <span class="unit">г</span></div></div>
+          <div class="kpi"><div class="label">На порцию — исходный вариант</div><div class="value"><span id="perOriginal">1</span> <span class="unit">г</span></div></div>
+          <div class="kpi"><div class="label">На порцию — пробный вариант</div><div class="value"><span id="perNew">0,85</span> <span class="unit">г</span></div></div>
+        </div>
+        <div class="barwrap">
+          <div class="barlabel"><span>Расчётное снижение добавленной соли</span><strong id="savedLabel">15 г · 15%</strong></div>
+          <div id="bar" class="bar" role="progressbar" aria-label="Доля снижения добавленной соли" aria-valuemin="0" aria-valuemax="30" aria-valuenow="15"><div id="barfill"></div></div>
+          <div class="bar-legend"><span>0%</span><span>30% — верхняя граница теста</span></div>
+        </div>
+        <p id="calcStatus" class="sr-only" aria-live="polite"></p>
+        <table class="compare">
+          <thead><tr><th scope="col">Вариант</th><th scope="col">На партию</th><th scope="col">На порцию</th></tr></thead>
+          <tbody id="tableRows">
+            <tr><td>Исходный</td><td>100 г</td><td>1 г</td></tr>
+            <tr><td>Пробный (−15%)</td><td>85 г</td><td>0,85 г</td></tr>
+          </tbody>
+        </table>
+        <div class="note"><strong>Важное ограничение.</strong> Это расчёт только соли, указанной в рецепте. Он не определяет натрий, уже содержащийся в других ингредиентах, и не заменяет лабораторный анализ готового блюда.</div>
+      </section>
+    </div>
+
+    <section class="panel saved" aria-labelledby="journal-heading">
+      <div class="savedhead">
+        <h2 id="journal-heading">03 / Журнал рецептов</h2>
+        <div class="actions">
+          <span id="recordCount" class="record-count">0 записей</span>
+          <button class="secondary" id="export" type="button" disabled>Экспорт CSV</button>
+        </div>
+      </div>
+      <p class="hint">Записи хранятся локально в браузере этого устройства. Нажмите «Загрузить», чтобы восстановить сохранённые параметры и продолжить проверку.</p>
+      <div id="recipes" class="recipe-list" aria-live="polite"><div class="empty">Пока нет сохранённых рецептов. Заполните форму и нажмите «Сохранить рецепт».</div></div>
+    </section>
+    <section class="panel outlook" aria-labelledby="outlook-heading">
+      <div class="outlook-head">
+        <div><div class="eyebrow">Перспектива развития</div><h2 id="outlook-heading">От эксперимента с рецептом — к общей практике</h2></div>
+        <span class="pill">Планы, не функции демо</span>
+      </div>
+      <p class="outlook-intro">Текущая версия объединяет расчёт, оценку вкуса и локальный журнал. При проверке спроса и тестировании на реальных блюдах проект может развиваться в сторону совместной работы организаций общественного питания.</p>
+      <div class="future-grid">
+        <article class="future-card"><span class="future-number">01</span><h3>Общая база рецептов</h3><p>Рецептуры с порциями, ингредиентами и историей пробных вариантов.</p></article>
+        <article class="future-card"><span class="future-number">02</span><h3>Аналитика результатов</h3><p>Сравнение изменений добавляемой соли и оценок дегустации.</p></article>
+        <article class="future-card"><span class="future-number">03</span><h3>Совместная работа</h3><p>Кабинеты поваров, технологов и администраторов организаций.</p></article>
+        <article class="future-card"><span class="future-number">04</span><h3>Русский и казахский</h3><p>Локализация интерфейса для организаций Казахстана.</p></article>
+        <article class="future-card"><span class="future-number">05</span><h3>Лабораторные данные</h3><p>Сопоставление расчётов соли с лабораторным анализом натрия.</p></article>
+      </div>
+      <p class="hint">Эти функции требуют отдельной разработки, проверки и настройки защиты данных; сейчас они не реализованы.</p>
+    </section>
+    <footer class="foot">SaltSense — браузерный прототип для измеримых экспериментов с рецептурами.<br>Расчёт охватывает только добавляемую соль; он не является медицинской рекомендацией и не доказывает снижение потребления натрия или влияние на здоровье.</footer>
+  </main>
+
+  <script>
+    'use strict';
+
+    const STORAGE_KEY = 'saltsense_records';
+    const $ = id => document.getElementById(id);
+    const fmt = value => Number(value).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
+
+    function readRecords() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        return Array.isArray(parsed) ? parsed.filter(record => record && typeof record === 'object') : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function writeRecords(records) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+        return true;
+      } catch (error) {
+        $('formStatus').textContent = 'Не удалось сохранить данные в браузере. Освободите место или воспользуйтесь экспортом CSV.';
+        return false;
+      }
+    }
+
+    function values() {
+      const dish = $('dish').value.trim() || 'Без названия';
+      const portionsText = $('portions').value.trim();
+      const saltText = $('salt').value.trim();
+      const portions = portionsText === '' ? NaN : Number(portionsText);
+      const salt = saltText === '' ? NaN : Number(saltText);
+      const reduction = Number($('reduction').value);
+      const validPortions = Number.isFinite(portions) && Number.isInteger(portions) && portions > 0;
+      const validSalt = Number.isFinite(salt) && salt >= 0;
+      return {
+        dish, portions, salt, reduction,
+        valid: validPortions && validSalt,
+        validPortions, validSalt,
+        newSalt: validSalt ? salt * (1 - reduction / 100) : NaN
+      };
+    }
+
+    function addCell(row, value) {
+      const cell = document.createElement('td');
+      cell.textContent = value;
+      row.append(cell);
+    }
+
+    function render() {
+      const value = values();
+      $('reductionLabel').textContent = `${value.reduction}%`;
+      $('bar').setAttribute('aria-valuenow', String(value.reduction));
+      $('barfill').style.width = `${(value.reduction / 30) * 100}%`;
+      $('save').disabled = !value.valid;
+
+      if (!value.valid) {
+        $('original').textContent = '—';
+        $('newSalt').textContent = '—';
+        $('perOriginal').textContent = '—';
+        $('perNew').textContent = '—';
+        $('savedLabel').textContent = 'Проверьте введённые данные';
+        $('calcStatus').textContent = 'Проверьте количество порций и массу соли.';
+        const message = !value.validPortions
+          ? 'Введите целое число порций больше нуля.'
+          : 'Укажите массу соли числом не меньше нуля.';
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 3;
+        cell.textContent = message;
+        row.append(cell);
+        $('tableRows').replaceChildren(row);
+        return;
+      }
+
+      $('original').textContent = fmt(value.salt);
+      $('newSalt').textContent = fmt(value.newSalt);
+      $('perOriginal').textContent = fmt(value.salt / value.portions);
+      $('perNew').textContent = fmt(value.newSalt / value.portions);
+      $('savedLabel').textContent = `${fmt(value.salt - value.newSalt)} г · ${value.reduction}%`;
+      $('calcStatus').textContent = `На партию добавлено ${fmt(value.salt)} граммов соли; в пробном варианте ${fmt(value.newSalt)} граммов.`;
+
+      const rows = [];
+      const original = document.createElement('tr');
+      addCell(original, 'Исходный');
+      addCell(original, `${fmt(value.salt)} г`);
+      addCell(original, `${fmt(value.salt / value.portions)} г`);
+      rows.push(original);
+      const trial = document.createElement('tr');
+      addCell(trial, `Пробный (−${value.reduction}%)`);
+      addCell(trial, `${fmt(value.newSalt)} г`);
+      addCell(trial, `${fmt(value.newSalt / value.portions)} г`);
+      rows.push(trial);
+      $('tableRows').replaceChildren(...rows);
+    }
+
+    function recordDate(record) {
+      const parsed = new Date(record.date);
+      if (!Number.isFinite(parsed.getTime())) return 'Дата не указана';
+      return new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' }).format(parsed);
+    }
+
+    function renderRecords() {
+      const records = readRecords();
+      const root = $('recipes');
+      $('recordCount').textContent = `${records.length} ${records.length === 1 ? 'запись' : records.length >= 2 && records.length <= 4 ? 'записи' : 'записей'}`;
+      $('export').disabled = records.length === 0;
+      if (!records.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'Пока нет сохранённых рецептов. Заполните форму и нажмите «Сохранить рецепт».';
+        root.replaceChildren(empty);
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      records.slice().reverse().forEach(record => {
+        const item = document.createElement('article');
+        item.className = 'recipe';
+        const info = document.createElement('div');
+        info.className = 'recipe-info';
+        const title = document.createElement('strong');
+        title.textContent = record.dish || 'Без названия';
+        const details = document.createElement('small');
+        const taste = record.taste ? `${record.taste}/5` : 'не оценён';
+        details.textContent = `${recordDate(record)} · ${record.portions} порц. · ${fmt(record.salt)} г → ${fmt(record.newSalt)} г · −${record.reduction}% · вкус: ${taste}`;
+        info.append(title, details);
+
+        const actions = document.createElement('div');
+        actions.className = 'recipe-actions';
+        const load = document.createElement('button');
+        load.type = 'button';
+        load.className = 'secondary';
+        load.textContent = 'Загрузить';
+        load.setAttribute('aria-label', `Загрузить рецепт: ${record.dish || 'Без названия'}`);
+        load.addEventListener('click', () => {
+          $('dish').value = record.dish === 'Без названия' ? '' : (record.dish || '');
+          $('portions').value = String(record.portions ?? '');
+          $('salt').value = String(record.salt ?? '');
+          $('reduction').value = String(record.reduction ?? 15);
+          $('taste').value = String(record.taste ?? '');
+          $('comments').value = String(record.comments ?? '');
+          $('formStatus').textContent = `Загружена запись «${record.dish || 'Без названия'}».`;
+          render();
+          $('dish').focus();
+        });
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'danger';
+        remove.textContent = 'Удалить';
+        remove.setAttribute('aria-label', `Удалить рецепт: ${record.dish || 'Без названия'}`);
+        remove.addEventListener('click', () => {
+          const updated = readRecords().filter(item => item.id !== record.id);
+          if (writeRecords(updated)) {
+            renderRecords();
+            $('formStatus').textContent = `Запись «${record.dish || 'Без названия'}» удалена.`;
+          }
+        });
+        actions.append(load, remove);
+        item.append(info, actions);
+        fragment.append(item);
+      });
+      root.replaceChildren(fragment);
+    }
+
+    $('recipeForm').addEventListener('input', event => {
+      if (event.target.id === 'portions' || event.target.id === 'salt') $('formStatus').textContent = '';
+      render();
+    });
+
+    $('recipeForm').addEventListener('submit', event => {
+      event.preventDefault();
+      const value = values();
+      if (!value.valid) return;
+      const record = {
+        id: globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function'
+          ? globalThis.crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        date: new Date().toISOString(),
+        dish: value.dish,
+        portions: value.portions,
+        salt: value.salt,
+        reduction: value.reduction,
+        newSalt: value.newSalt,
+        taste: $('taste').value,
+        comments: $('comments').value.trim()
+      };
+      const records = readRecords();
+      records.push(record);
+      if (writeRecords(records)) {
+        renderRecords();
+        $('formStatus').textContent = `Рецепт «${value.dish}» сохранён в журнале.`;
+      }
+    });
+
+    $('recipeForm').addEventListener('reset', () => {
+      window.setTimeout(() => {
+        $('formStatus').textContent = '';
+        render();
+      }, 0);
+    });
+
+    function csvCell(value) {
+      let text = String(value ?? '');
+      // Prevent spreadsheet applications from evaluating user-entered text as a formula.
+      if (/^[\t\r ]*[=+@-]/.test(text)) text = `'${text}`;
+      return `"${text.replace(/"/g, '""')}"`;
+    }
+
+    $('export').addEventListener('click', () => {
+      const records = readRecords();
+      if (!records.length) return;
+      const rows = [[
+        'Дата', 'Блюдо', 'Порции', 'Соль исходная (г)', 'Снижение (%)',
+        'Соль пробная (г)', 'Оценка вкуса (1-5)', 'Заметки'
+      ]];
+      records.forEach(record => rows.push([
+        record.date, record.dish, record.portions, record.salt, record.reduction,
+        record.newSalt, record.taste, record.comments
+      ]));
+      const csv = '\uFEFF' + rows.map(row => row.map(csvCell).join(';')).join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'saltsense_recipes.csv';
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      $('formStatus').textContent = 'Журнал экспортирован в CSV.';
+    });
+
+    window.addEventListener('storage', event => {
+      if (event.key === STORAGE_KEY) renderRecords();
+    });
+
+    render();
+    renderRecords();
+  </script>
+</body>
+</html>
